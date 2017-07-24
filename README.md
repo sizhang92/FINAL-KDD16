@@ -8,10 +8,6 @@ The package contains the following files:
 - cross_query.m: FINAL on-query algorithm to compute the similarity vector between a query node in network G1 and all the nodes in G2
 - greedy_match.m: greedy matching algorithm to get the one-to-one mappings based on the similarity matrix returned by FINAL
 - run.m: a demo code file 
-- DBLP-CoAuthor.mat: DBLP co-author networks dataset
-- Douban.mat: Douban online & offline networks dataset
-- flickr-lastfm.mat: flickr & lastfm networks dataset
-- flickr-myspace.mat: flickr & myspace networks dataset
 
 ## Usage
 Please refer to the demo code file run.m and the comments in each file for the detailed information
