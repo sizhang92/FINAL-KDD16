@@ -1,71 +1,72 @@
-function s = cross_query(A, B, H, node_label1, node_label2, l_node, alpha, r, p, idx)
+function s = cross_query(A1, A2, N1, N2, H, alpha, r, p, idx)
 
 % This function computes the similarity vector s, for the scenario that
-% only categorical node attributes are available in two networks. And this
+% only node attributes are available in two networks. And this
 % is for the application that we want to query the corss-network
-% similarities for a query node in one network.
-% 
-% To explain, categorical node attributes can be taken examples as gender
-% (including two different attributes, male and female), locations
-% (including different countries, and so on). 
-% To use this code:
+% similarities for a specific query node in one network.
+%
 % Input:
-%   - A, B: adjacency matrices of two networks G1 and G2;
-%   - H: prior knowledge of preference alignment matrix, such as name
-%       similarity matrix between two users' name, degree similarity matrix,
-%       or even a uniform probability matrix.
-%   - node_label1, node_label2: node categorical attribute vectors of two
-%       networks. If there are three different categories, such as China,
-%       America and India, then these two vectors can take values from either
-%       1, 2, or 3.
-%   - l_node: the number of node attribute values.
+%   - A1, A2: adjacency matrices of two networks G1 and G2;
+%   - N1, N2: Node attributes matrices, N1 is an n1*K matrix, N2 is an n2*K
+%         matrix, each row is a node, and each column represents an
+%         attribute. If the input node attributes are categorical, we can
+%         use one hot encoding to represent each node feature as a vector.
+%         And the input N1 and N2 are still n1*K and n2*K matrices.
+%         E.g., for node attributes as countries, including USA, China, Canada, 
+%         if a user is from China, then his node feature is (0, 1, 0).
+%   - H: an n2*n1 prior node similarity matrix, e.g., degree similarity. H
+%        should be normalized, e.g., sum(sum(H)) = 1.
 %   - alpha: a parameter that controls the importance of the consistency
 %       principles, that is, 1-alpha controls the importance of prior
 %       knowledge.
-%   - r: the rank of the low-rank approximations on matrices A, and B.
+%   - r: the rank of the low-rank approximations on matrices A1, and A2.
 %   - p: the rank for SVD on the prior knowledge matrix H. 
 %   - idx: the index of the query node in network G1.
-% Output: an n*1 vector measuring the similarities between the query node
-%         in network G1 and all the nodes in network G2.
+%
+% Output: 
+%   - s: an n2*1 vector measuring the similarities between the query node
+%        in network G1 and all the nodes in network G2.
 
-m=size(A,1);
-n=size(B,1);
+n1 = size(A1,1); n2 = size(A2,1);
+K = size(N1, 2);
+% Normalize node feature vectors
+K1 = sum(N1.^2, 2).^(-0.5); K1(K1 == Inf) = 0;
+K2 = sum(N2.^2, 2).^(-0.5); K2(K2 == Inf) = 0;
+N1 = bsxfun(@times, K1, N1); % normalize the node attribute for A1
+N2 = bsxfun(@times, K2, N2); % normalize the node attribute for A2
+N = spconvert([n1*n2, 1, 0]);
+for k = 1: K
+    N = N + kron(N1(:, k), N2(:, k));   % compute N as a kronecker similarity
+end
 
-% compute the degree matrix of A and B, as well as their inverse
-d1 = sum(A,2);d2 = sum(B,2);
-D1 = 1./d1; D2 = 1./d2;
+% compute the degree matrix of A1 and A2, as well as their inverse
+d1 = sum(A1, 2); d2 = sum(A2, 2);
+D1 = 1 ./ d1; D2 = 1 ./ d2;
 D1(D1 == Inf) = 0; D2(D2 == Inf) = 0;
 
 % low-rank approximation on A, B, and H'
-[U1,Lambda1]=eigs(A,r);
-[U2,Lambda2]=eigs(B,r);
-H = H./sum(sum(H)); [U,S,V]=svds(H',p);
+[U1, Lambda1] = eigs(A1, r);
+[U2, Lambda2] = eigs(A2, r);
+[U, Sin, V] = svds(H, p);
 
 % compute the matrix g by the equations in the paper
-sigma = []; g = zeros(r^2,1);
-for i = 1:l_node
-    [rn1,cn1,~] = find(node_label1 == i);
-    [rn2,cn2,~] = find(node_label2 == i);
-    N1 = sparse(rn1, cn1, 1, m, 1);
-    N2 = sparse(rn2, cn2, 1, n, 1);
-    T1 = N1.*D1; T2 = N2.*D2;  
-    if isempty(sigma), sigma = kron(U1'*(bsxfun(@times,T1,U1)),U2'*(bsxfun(@times,T2,U2)));
-    else sigma = sigma + kron(U1'*(bsxfun(@times,T1,U1)),U2'*(bsxfun(@times,T2,U2))); end 
-    for j = 1:p
-        g = g + S(j,j)*kron(U1'*(N1.*sqrt(D1).*V(:,j)),U2'*(N2.*sqrt(D2).*U(:,j)));
+sigma = zeros(r^2, r^2); g = zeros(r^2, 1);
+for i = 1: K 
+    T1 = N1(:, i) .* D1; T2 = N2(:, i) .* D2;  
+    sigma = sigma + kron(U1' * (bsxfun(@times, T1, U1)), U2' * (bsxfun(@times, T2, U2)));  
+    for j = 1: p
+        g = g + Sin(j,j)*kron(U1'*(N1(:, i).*sqrt(D1).*V(:,j)),U2'*(N2(:, i).*sqrt(D2).*U(:,j)));
     end
 end
 
 % compute the matrix /Lambda by the equations in the paper
-Lambda = inv(kron(diag(1./diag(Lambda2)), diag(1./diag(Lambda1)))-alpha*sigma);
+Lambda = kron(diag(1./diag(Lambda1)), diag(1./diag(Lambda2)))-alpha*sigma;
 
 % query the cross-network similarity vector for the node-idx in network G1
 Da = (d1(idx)*d2).^(-0.5);
 Da(Da == Inf) = 0;
-N1=node_label1(idx);
-N2=node_label2;
-N2(N2~=N1)=0;
-N2(N2==N1)=1; Na=N2;
-s = (1-alpha)*H(idx,:)' + alpha*(1-alpha)*(Da.*Na).*(kron(U1(idx,:),U2)*Lambda*g);
+Na = N1(idx, :);
+NN = (Na * N2')';
+s = (1-alpha) * H(:, idx) + alpha*(1-alpha) * (Da .* NN) .* (kron(U1(idx, :), U2)*(Lambda \ g));
 
 
