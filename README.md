@@ -13,4 +13,4 @@ The package contains the following files:
 Please refer to the demo code file demo.m and the descriptions in each file for the detailed information
 
 ## Reference
-Si Zhang, Hanghang Tong. FINAL: Fast Attributed Network Alignment. 22nd ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD), 2016. (Oral Presentation)
+Zhang, Si, and Hanghang Tong. "FINAL: Fast Attributed Network Alignment." Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining. ACM, 2016.
