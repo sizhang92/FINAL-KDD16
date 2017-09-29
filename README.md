@@ -10,7 +10,7 @@ The package contains the following files:
 - demo.m: a demo code file 
 
 ## Usage
-Please refer to the demo code file demo.m and the descriptions in each file for the detailed information
+Please refer to the demo code file demo.m and the descriptions in each file for the detailed information. The code can be only used for academic purpose and please kindly cite our published paper.
 
 ## Reference
 Zhang, Si, and Hanghang Tong. "FINAL: Fast Attributed Network Alignment." Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining. ACM, 2016.
