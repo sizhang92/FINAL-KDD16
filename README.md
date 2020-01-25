@@ -9,6 +9,9 @@ The package contains the following files:
 - UniAlign.m: a variant alignment algorithm of BigAlign on unipartite networks
 - demo.m: a demo code file 
 
+## Use with training data
+FINAL can be easily extend to the semi-supervised setting by constructing the prior matrix H based on the prior labeled node alignment. For example, if we know node-i in G1 is aligned with node-j in G2 a priori, we can set H(j,:)=H(:,i)=0 except H(j,i)=1. Note that in the code, H is an n2-by-n1 matrix.
+
 ## Usage
 Please refer to the demo code file demo.m and the descriptions in each file for the detailed information. The code can be only used for academic purpose and please kindly cite our published paper.
 
